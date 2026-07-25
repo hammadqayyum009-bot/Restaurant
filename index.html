@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'Étoile | Premium Dining Experience</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: '#D4AF37',
+                        goldhover: '#F3E5AB',
+                        dark: '#0A0A0A',
+                        maroon: '#2a0808'
+                    },
+                    fontFamily: {
+                        serif: ['"Playfair Display"', 'serif'],
+                        sans: ['Lato', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom CSS -->
+    <style>
+        body { margin: 0; background-color: #0A0A0A; color: #fff; overflow-x: hidden; scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0A0A0A; }
+        ::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #F3E5AB; }
+        
+        .glass-panel { background: rgba(10, 10, 10, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(212, 175, 55, 0.2); }
+        .glass-input { background: rgba(255,255,255,0.03); border: 1px solid rgba(212, 175, 55, 0.3); color: white; transition: all 0.3s; }
+        .glass-input:focus { outline: none; border-color: #D4AF37; background: rgba(255,255,255,0.08); box-shadow: 0 0 10px rgba(212,175,55,0.2); }
+        
+        select option { background-color: #0A0A0A; color: white; }
+        
+        .hero-bg {
+            background-image: linear-gradient(to bottom, rgba(10,10,10,0.3), rgba(10,10,10,1)), url('https://images.unsplash.com/photo-1544148103-0773bf10d330?auto=format&fit=crop&q=80&w=1920');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        /* 3D Modal Perspective */
+        .modal-perspective { perspective: 1500px; }
+        
+        /* Smooth fade for stars */
+        .star-transition { transition: all 0.2s ease-in-out; }
+    </style>
+
+    <!-- Import Maps -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "framer-motion": "https://esm.sh/framer-motion@10.18.0?external=react,react-dom",
+            "lucide-react": "https://esm.sh/lucide-react@0.312.0?external=react"
+        }
+    }
+    </script>
+
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="antialiased">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { motion, AnimatePresence } from 'framer-motion';
+        import { ShoppingCart, MapPin, Star, Plus, Minus, X, Clock, Calendar, Users, ChevronRight, User, LogOut, Facebook, Instagram, Twitter, Mail, Info, Utensils, CheckCircle2, GlassWater, MessageSquare } from 'lucide-react';
+
+        // --- EXPANDED GLOBAL MOCK DATA ---
+        const menuItems = [
+            // FOOD
+            { id: 1, name: "Truffle Risotto", category: "Italian", price: 38, desc: "Aged Arborio rice, wild mushrooms, fresh black truffle shavings.", image: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&q=80&w=600", tags: ['Veg'] },
+            { id: 2, name: "A5 Wagyu Ribeye", category: "Continental", price: 125, desc: "Charcoal-grilled Japanese Wagyu, asparagus purée, bone marrow jus.", image: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600", tags: ['Signature'] },
+            { id: 3, name: "Peking Duck", category: "Chinese", price: 65, desc: "Crispy roasted duck, steamed pancakes, scallions, house plum sauce.", image: "https://images.unsplash.com/photo-1580651315530-69c8e0026377?auto=format&fit=crop&q=80&w=600", tags: [] },
+            { id: 4, name: "Saffron Biryani", category: "Indian", price: 42, desc: "Slow-cooked basmati rice, tender lamb, Iranian saffron, edible gold leaf.", image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&q=80&w=600", tags: ['Spicy'] },
+            { id: 5, name: "Omakase Sushi", category: "Japanese", price: 85, desc: "Chef's daily selection of premium sashimi and nigiri.", image: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&q=80&w=600", tags: ['Raw'] },
+            { id: 6, name: "Lobster Tacos", category: "Mexican", price: 32, desc: "Butter-poached lobster, blue corn tortilla, mango salsa, chipotle crema.", image: "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?auto=format&fit=crop&q=80&w=600", tags: [] },
+            { id: 7, name: "Royal Mezze", category: "Middle Eastern", price: 28, desc: "Hummus truffles, muhammara, smoked moutabal, warm artisanal pita.", image: "https://images.unsplash.com/photo-1542826438-bd32f43d626f?auto=format&fit=crop&q=80&w=600", tags: ['Veg'] },
+            { id: 8, name: "Coq au Vin", category: "French", price: 45, desc: "Braised chicken in burgundy wine, pearl onions, mushrooms, and pancetta.", image: "https://images.unsplash.com/photo-1600891964092-4316c288032e?auto=format&fit=crop&q=80&w=600", tags: [] },
+            { id: 9, name: "Paella Valenciana", category: "Spanish", price: 48, desc: "Bomba rice, saffron, shrimp, mussels, calamari, and Spanish chorizo.", image: "https://images.unsplash.com/photo-1534080564583-6be75777b70a?auto=format&fit=crop&q=80&w=600", tags: ['Signature'] },
+            
+            // REPLACED DISH (To fix broken image completely)
+            { id: 10, name: "Spicy Pad Thai", category: "Thai", price: 26, desc: "Stir-fried rice noodles, shrimp, peanuts, scrambled egg, fresh bean sprouts.", image: "https://images.unsplash.com/photo-1559314809-0d155014e29e?auto=format&fit=crop&q=80&w=600", tags: ['Spicy', 'Signature'] },
+            
+            { id: 11, name: "Moqueca Baiana", category: "Brazilian", price: 34, desc: "Traditional seafood stew with coconut milk, dendê oil, and peppers.", image: "https://images.unsplash.com/photo-1599921841143-819065a55cc6?auto=format&fit=crop&q=80&w=600", tags: [] },
+            { id: 12, name: "Tomahawk Steak", category: "American", price: 140, desc: "32oz dry-aged bone-in ribeye, garlic herb butter, roasted root vegetables.", image: "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&q=80&w=600", tags: ['Signature'] },
+            { id: 13, name: "Classic Moussaka", category: "Greek", price: 30, desc: "Layers of eggplant, spiced minced meat, topped with creamy béchamel.", image: "https://images.unsplash.com/photo-1633436374961-09b92742047b?auto=format&fit=crop&q=80&w=600", tags: [] },
+            { id: 14, name: "Bibimbap", category: "Korean", price: 28, desc: "Sizzling stone bowl rice, marinated beef, seasonal vegetables, gochujang, fried egg.", image: "https://images.unsplash.com/photo-1553163147-622ab57be1c7?auto=format&fit=crop&q=80&w=600", tags: [] },
+            { id: 15, name: "24K Gold Tiramisu", category: "Desserts", price: 24, desc: "Mascarpone, espresso-soaked ladyfingers, wrapped in 24k gold leaf.", image: "https://images.unsplash.com/photo-1571115177098-24ec42ed204d?auto=format&fit=crop&q=80&w=600", tags: ['Signature'] },
+            
+            // BEVERAGES
+            { id: 16, name: "Signature Negroni", category: "Beverages", price: 18, desc: "London Dry Gin, Campari, Sweet Vermouth, smoked orange peel.", image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&q=80&w=600", tags: ['Alcohol'] },
+            { id: 17, name: "Vintage Pinot Noir", category: "Beverages", price: 45, desc: "Glass of 2015 Burgundy. Earthy notes with a silky cherry finish.", image: "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?auto=format&fit=crop&q=80&w=600", tags: ['Alcohol'] },
+            { id: 18, name: "Ceremonial Matcha", category: "Beverages", price: 12, desc: "Premium grade Uji matcha, whisked table-side, served hot or iced.", image: "https://images.unsplash.com/photo-1515823662972-da6a2e4d3002?auto=format&fit=crop&q=80&w=600", tags: [] },
+            { id: 19, name: "Moroccan Mint Tea", category: "Beverages", price: 14, desc: "Traditional gunpowder green tea, fresh spearmint, lightly sweetened.", image: "https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&q=80&w=600", tags: [] },
+            { id: 20, name: "Artisanal Kombucha", category: "Beverages", price: 10, desc: "House-fermented, infused with pomegranate and fresh ginger.", image: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&q=80&w=600", tags: [] }
+        ];
+
+        const initialReviews = [
+            { id: 1, name: "James Carter", dp: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80", rating: 5, text: "The Wagyu literally melted. The absolute pinnacle of dining. An experience that transcends mere food. The ambiance was equally stunning.", date: "2 days ago" },
+            { id: 2, name: "Elena Rodriguez", dp: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80", rating: 5, text: "Impeccable service, surreal atmosphere. A masterclass in fine dining. I highly recommend the Truffle Risotto and the Signature Negroni.", date: "1 week ago" }
+        ];
+
+        const categories = ["All", "American", "Brazilian", "British", "Chinese", "Continental", "French", "Greek", "Indian", "Italian", "Japanese", "Korean", "Mexican", "Middle Eastern", "Spanish", "Thai", "Desserts", "Beverages"];
+
+        const App = () => {
+            // State
+            const [activeCategory, setActiveCategory] = useState("All");
+            const [cart, setCart] = useState([]);
+            const [isCartOpen, setIsCartOpen] = useState(false);
+            const [scrolled, setScrolled] = useState(false);
+            
+            // Auth State
+            const [isAuthOpen, setIsAuthOpen] = useState(false);
+            const [isLoginMode, setIsLoginMode] = useState(true);
+            const [user, setUser] = useState(null);
+
+            // Review State
+            const [reviews, setReviews] = useState(initialReviews);
+            const [newReviewRating, setNewReviewRating] = useState(5);
+            const [hoveredStar, setHoveredStar] = useState(0);
+
+            // Modal State
+            const [modalContent, setModalContent] = useState(null); // { type: 'order' | 'reservation' | 'auth' | 'review', message: string }
+
+            // Handle Scroll for Navbar
+            useEffect(() => {
+                const handleScroll = () => setScrolled(window.scrollY > 50);
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            // Cart Logic
+            const addToCart = (item) => {
+                setCart(prev => {
+                    const existing = prev.find(i => i.id === item.id);
+                    if (existing) return prev.map(i => i.id === item.id ? { ...i, qty: i.qty + 1 } : i);
+                    return [...prev, { ...item, qty: 1 }];
+                });
+                setIsCartOpen(true);
+            };
+
+            const updateQty = (id, delta) => {
+                setCart(prev => prev.map(item => {
+                    if (item.id === id) {
+                        const newQty = item.qty + delta;
+                        return newQty > 0 ? { ...item, qty: newQty } : item;
+                    }
+                    return item;
+                }).filter(item => item.qty > 0));
+            };
+
+            const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const filteredMenu = activeCategory === "All" ? menuItems : menuItems.filter(i => i.category === activeCategory);
+
+            // Handlers
+            const handleAuthSubmit = (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const name = formData.get('name') || formData.get('email').split('@')[0];
+                setUser({ name, email: formData.get('email') });
+                setIsAuthOpen(false);
+                setModalContent({ 
+                    type: 'auth', 
+                    title: 'Welcome to L\'Étoile',
+                    message: `You have successfully signed in, ${name}. Enjoy your premium dining experience.`
+                });
+            };
+
+            const handleCheckout = () => {
+                if (!user) {
+                    setIsCartOpen(false);
+                    setIsAuthOpen(true);
+                    return;
+                }
+                setCart([]);
+                setIsCartOpen(false);
+                setModalContent({
+                    type: 'order',
+                    title: 'Order Confirmed',
+                    message: `Thank you for your order, ${user.name}! The kitchen has received your request and our master chefs are preparing your premium meal.`
+                });
+            };
+
+            const handleReservationSubmit = (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const date = formData.get('date');
+                const time = formData.get('time');
+                const name = formData.get('name');
+                e.target.reset();
+                setModalContent({
+                    type: 'reservation',
+                    title: 'Table Secured',
+                    message: `Dear ${name}, your exclusive table reservation for ${date} at ${time} has been confirmed. A formal invitation has been sent to your email.`
+                });
+            };
+
+            const handleReviewSubmit = (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const text = formData.get('reviewText');
+                const name = user ? user.name : formData.get('guestName');
+                
+                const newReview = {
+                    id: reviews.length + 1,
+                    name: name,
+                    dp: null, // Will use default icon if null
+                    rating: newReviewRating,
+                    text: text,
+                    date: "Just now"
+                };
+
+                setReviews([newReview, ...reviews]);
+                e.target.reset();
+                setNewReviewRating(5);
+                setModalContent({
+                    type: 'review',
+                    title: 'Feedback Received',
+                    message: `Thank you for sharing your experience, ${name}. Your review has been successfully posted to our portfolio.`
+                });
+            };
+
+            // Custom 3D Premium Modal Component
+            const PremiumModal = () => (
+                <AnimatePresence>
+                    {modalContent && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center modal-perspective p-4">
+                            <motion.div 
+                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+                                className="absolute inset-0 bg-black/80 backdrop-blur-md" 
+                                onClick={() => setModalContent(null)} 
+                            />
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.8, rotateX: 45, y: 50 }} 
+                                animate={{ opacity: 1, scale: 1, rotateX: 0, y: 0 }} 
+                                exit={{ opacity: 0, scale: 0.8, rotateX: -45, y: 50 }} 
+                                transition={{ type: "spring", damping: 20, stiffness: 100 }}
+                                className="relative z-10 glass-panel p-10 md:p-12 rounded-2xl border-t border-b border-gold shadow-[0_20px_60px_rgba(212,175,55,0.25)] max-w-lg w-full text-center bg-gradient-to-b from-dark to-[#1a1405]"
+                            >
+                                <button onClick={() => setModalContent(null)} className="absolute top-4 right-4 text-gray-500 hover:text-gold transition-colors">
+                                    <X size={24} />
+                                </button>
+
+                                <motion.div 
+                                    initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: "spring" }}
+                                    className="w-20 h-20 mx-auto rounded-full bg-gold/10 border border-gold flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(212,175,55,0.4)]"
+                                >
+                                    <CheckCircle2 size={40} className="text-gold" />
+                                </motion.div>
+
+                                <h2 className="text-3xl md:text-4xl font-serif text-white mb-4 drop-shadow-lg">{modalContent.title}</h2>
+                                <div className="h-px w-24 bg-gold mx-auto mb-6 opacity-50"></div>
+                                <p className="text-gray-300 leading-relaxed mb-8 text-lg font-light">
+                                    {modalContent.message}
+                                </p>
+
+                                <button 
+                                    onClick={() => setModalContent(null)} 
+                                    className="bg-gold text-black px-10 py-3 uppercase tracking-widest text-sm font-bold hover:bg-white transition-all duration-300 shadow-[0_0_20px_rgba(212,175,55,0.3)] rounded"
+                                >
+                                    Continue
+                                </button>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
+            );
+
+            return (
+                <div className="min-h-screen bg-dark text-white font-sans selection:bg-gold selection:text-black">
+                    
+                    <PremiumModal />
+
+                    {/* PROFESSIONAL HEADER / NAVBAR */}
+                    <nav className={`fixed top-0 w-full z-40 transition-all duration-500 ${scrolled ? 'bg-dark/95 backdrop-blur-md py-3 shadow-2xl border-b border-gold/20' : 'bg-gradient-to-b from-black/80 to-transparent py-6'}`}>
+                        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+                            <a href="#" className="text-3xl font-serif font-bold tracking-wider text-gold hover:text-white transition-colors flex items-center gap-2">
+                                <Utensils size={28} className="text-gold" />
+                                L'Étoile
+                            </a>
+
+                            <div className="hidden lg:flex space-x-10 text-sm uppercase tracking-widest text-gray-300 font-semibold">
+                                <a href="#menu" className="hover:text-gold transition-colors">Culinary Menu</a>
+                                <a href="#reservation" className="hover:text-gold transition-colors">Book a Table</a>
+                                <a href="#about" className="hover:text-gold transition-colors">Our Story & Reviews</a>
+                            </div>
+
+                            <div className="flex items-center space-x-6">
+                                {user ? (
+                                    <div className="hidden md:flex items-center gap-4 text-sm text-gray-300">
+                                        <span className="font-serif italic text-gold">Welcome, {user.name}</span>
+                                        <button onClick={() => setUser(null)} className="hover:text-white transition-colors flex items-center gap-1" title="Sign Out">
+                                            <LogOut size={18} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button onClick={() => setIsAuthOpen(true)} className="hidden md:flex items-center gap-2 text-sm uppercase tracking-widest text-gray-300 hover:text-gold transition-colors">
+                                        <User size={18} /> Sign In
+                                    </button>
+                                )}
+
+                                <button onClick={() => setIsCartOpen(true)} className="relative text-white hover:text-gold transition flex items-center">
+                                    <ShoppingCart size={24} />
+                                    {cart.length > 0 && (
+                                        <span className="absolute -top-2 -right-2 bg-gold text-black text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-dark shadow-[0_0_10px_rgba(212,175,55,0.8)]">
+                                            {cart.reduce((a, b) => a + b.qty, 0)}
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </nav>
+
+                    {/* AUTHENTICATION MODAL */}
+                    <AnimatePresence>
+                        {isAuthOpen && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-perspective">
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsAuthOpen(false)} />
+                                <motion.div 
+                                    initial={{ scale: 0.9, opacity: 0, rotateY: -20 }} 
+                                    animate={{ scale: 1, opacity: 1, rotateY: 0 }} 
+                                    exit={{ scale: 0.9, opacity: 0, rotateY: 20 }} 
+                                    transition={{ type: "spring", damping: 25 }}
+                                    className="glass-panel p-8 md:p-10 rounded-2xl w-full max-w-md relative z-10 shadow-[0_10px_40px_rgba(212,175,55,0.2)] border-t border-gold"
+                                >
+                                    <button onClick={() => setIsAuthOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X size={24} /></button>
+                                    <h2 className="text-3xl font-serif text-gold mb-2 text-center">{isLoginMode ? 'Welcome Back' : 'Join L\'Étoile'}</h2>
+                                    <p className="text-gray-400 text-sm text-center mb-8">{isLoginMode ? 'Sign in to manage your reservations and orders.' : 'Create an account for exclusive culinary experiences.'}</p>
+                                    
+                                    <form onSubmit={handleAuthSubmit} className="space-y-5">
+                                        {!isLoginMode && (
+                                            <div>
+                                                <label className="block text-xs text-gold mb-1 uppercase tracking-wider">Full Name</label>
+                                                <input type="text" name="name" required className="w-full p-3 rounded glass-input" placeholder="John Doe" />
+                                            </div>
+                                        )}
+                                        <div>
+                                            <label className="block text-xs text-gold mb-1 uppercase tracking-wider">Email Address</label>
+                                            <input type="email" name="email" required className="w-full p-3 rounded glass-input" placeholder="john@example.com" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gold mb-1 uppercase tracking-wider">Password</label>
+                                            <input type="password" required className="w-full p-3 rounded glass-input" placeholder="••••••••" />
+                                        </div>
+                                        <button type="submit" className="w-full bg-gold text-black py-4 rounded font-bold uppercase tracking-widest hover:bg-white transition-colors mt-4 shadow-[0_0_15px_rgba(212,175,55,0.3)]">
+                                            {isLoginMode ? 'Sign In' : 'Create Account'}
+                                        </button>
+                                    </form>
+                                    <div className="mt-8 text-center text-sm text-gray-400 border-t border-white/10 pt-6">
+                                        {isLoginMode ? "Don't have an account? " : "Already have an account? "}
+                                        <button onClick={() => setIsLoginMode(!isLoginMode)} className="text-gold hover:underline font-bold tracking-wider">
+                                            {isLoginMode ? 'SIGN UP' : 'SIGN IN'}
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            </div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* CART DRAWER */}
+                    <AnimatePresence>
+                        {isCartOpen && (
+                            <>
+                                <motion.div 
+                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                    className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 cursor-pointer"
+                                    onClick={() => setIsCartOpen(false)}
+                                />
+                                <motion.div 
+                                    initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'tween', duration: 0.3 }}
+                                    className="fixed right-0 top-0 bottom-0 w-full md:w-[450px] bg-dark border-l border-gold/20 z-50 p-6 flex flex-col shadow-2xl"
+                                >
+                                    <div className="flex justify-between items-center mb-8 pb-4 border-b border-white/10">
+                                        <h2 className="text-2xl font-serif text-gold flex items-center gap-2"><ShoppingCart /> Your Order</h2>
+                                        <button onClick={() => setIsCartOpen(false)} className="text-gray-400 hover:text-white"><X size={24} /></button>
+                                    </div>
+                                    
+                                    <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+                                        {cart.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4">
+                                                <Utensils size={48} className="opacity-20" />
+                                                <p className="font-serif italic text-lg text-center">Your culinary cart is empty.</p>
+                                                <button onClick={() => setIsCartOpen(false)} className="border border-gold text-gold px-6 py-2 rounded hover:bg-gold hover:text-black transition uppercase text-xs tracking-widest mt-4">Browse Menu</button>
+                                            </div>
+                                        ) : (
+                                            cart.map(item => (
+                                                <div key={item.id} className="flex gap-4 items-center bg-white/5 p-3 rounded-lg border border-white/5 hover:border-gold/30 transition-colors">
+                                                    <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-md shadow-lg" />
+                                                    <div className="flex-1">
+                                                        <h4 className="font-serif text-lg text-white leading-tight mb-1">{item.name}</h4>
+                                                        <p className="text-gold font-bold">${item.price}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 bg-black rounded-full px-2 py-1 border border-gold/30">
+                                                        <button onClick={() => updateQty(item.id, -1)} className="text-gray-400 hover:text-white"><Minus size={14} /></button>
+                                                        <span className="text-sm font-bold w-4 text-center">{item.qty}</span>
+                                                        <button onClick={() => updateQty(item.id, 1)} className="text-gold hover:text-white"><Plus size={14} /></button>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+
+                                    {cart.length > 0 && (
+                                        <div className="mt-6 pt-6 border-t border-white/10">
+                                            <div className="flex justify-between text-xl font-serif mb-2">
+                                                <span>Subtotal:</span>
+                                                <span className="text-white">${cartTotal.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm text-gray-400 mb-6">
+                                                <span>Taxes & Fees:</span>
+                                                <span>Calculated at checkout</span>
+                                            </div>
+                                            <button 
+                                                onClick={handleCheckout}
+                                                className="w-full bg-gold text-black py-4 uppercase tracking-widest font-bold hover:bg-white transition-colors rounded shadow-[0_0_15px_rgba(212,175,55,0.4)]"
+                                            >
+                                                {user ? 'Complete Order' : 'Sign In to Checkout'}
+                                            </button>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            </>
+                        )}
+                    </AnimatePresence>
+
+                    {/* HERO SECTION */}
+                    <section className="relative h-screen w-full flex items-center justify-center hero-bg overflow-hidden">
+                        <div className="absolute inset-0 z-10 bg-gradient-to-t from-dark via-transparent to-dark/40"></div>
+                        
+                        <div className="relative z-20 text-center px-4 max-w-4xl mx-auto mt-20">
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
+                                <div className="flex items-center justify-center gap-3 mb-6">
+                                    <div className="h-[1px] w-12 bg-gold"></div>
+                                    <p className="text-gold uppercase tracking-[0.4em] text-xs md:text-sm font-bold">A Michelin Star Experience</p>
+                                    <div className="h-[1px] w-12 bg-gold"></div>
+                                </div>
+                            </motion.div>
+                            
+                            <motion.h1 
+                                initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3, duration: 1.2, type: "spring" }}
+                                className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold text-white mb-6 drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] leading-tight"
+                            >
+                                The Pinnacle of <br/><span className="text-gold italic font-light">Fine Dining</span>
+                            </motion.h1>
+                            
+                            <motion.p 
+                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 1 }}
+                                className="text-gray-200 text-lg md:text-xl mb-10 max-w-2xl mx-auto font-light drop-shadow-md"
+                            >
+                                Embark on a gastronomic journey curated by world-renowned chefs. Exquisite flavors from across the globe, impeccable service, and an unforgettable ambiance await you.
+                            </motion.p>
+                            
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9, duration: 1 }} className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                <a href="#reservation" className="w-full sm:w-auto bg-gold text-black px-10 py-4 uppercase tracking-widest text-sm font-bold hover:bg-white transition-all duration-300 shadow-[0_0_20px_rgba(212,175,55,0.4)]">
+                                    Book a Table
+                                </a>
+                                <a href="#menu" className="w-full sm:w-auto border border-white/40 text-white px-10 py-4 uppercase tracking-widest text-sm hover:border-gold hover:text-gold transition-all duration-300 backdrop-blur-md bg-black/30">
+                                    Explore Menu
+                                </a>
+                            </motion.div>
+                        </div>
+                    </section>
+
+                    {/* MENU SECTION */}
+                    <section id="menu" className="py-24 px-6 max-w-7xl mx-auto">
+                        <motion.div 
+                            initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }}
+                            className="text-center mb-16"
+                        >
+                            <span className="text-gold uppercase tracking-widest text-sm mb-2 block font-bold">Gastronomy</span>
+                            <h2 className="text-4xl md:text-5xl font-serif mb-6 text-white">Global Culinary Masterpieces</h2>
+                            <p className="text-gray-400 max-w-2xl mx-auto">Discover our curated selection of authentic dishes and artisanal beverages from around the world, crafted with the finest ingredients and modern techniques.</p>
+                        </motion.div>
+
+                        <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-12 max-w-5xl mx-auto">
+                            {categories.map(cat => (
+                                <button 
+                                    key={cat} 
+                                    onClick={() => setActiveCategory(cat)}
+                                    className={`px-4 py-2 rounded-full border text-xs md:text-sm uppercase tracking-wider transition-all duration-300 ${activeCategory === cat ? 'bg-gold border-gold text-black font-bold shadow-[0_0_15px_rgba(212,175,55,0.5)] scale-105' : 'border-white/10 text-gray-400 hover:border-gold/50 hover:text-white bg-white/5'}`}
+                                >
+                                    {cat === 'Beverages' && <GlassWater size={14} className="inline mr-1 -mt-0.5" />}
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+
+                        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                            <AnimatePresence>
+                                {filteredMenu.map(item => (
+                                    <motion.div 
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.3 }}
+                                        key={item.id} 
+                                        className="glass-panel group overflow-hidden rounded-xl flex flex-col hover:border-gold/50 transition-colors shadow-lg hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+                                    >
+                                        <div className="relative h-60 overflow-hidden">
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10 opacity-60 group-hover:opacity-30 transition-opacity"></div>
+                                            <img src={item.image} alt={item.name} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />
+                                            <div className="absolute top-3 right-3 flex flex-col gap-2 z-20">
+                                                {item.tags.map(tag => (
+                                                    <span key={tag} className="bg-black/80 backdrop-blur text-gold text-[10px] px-2 py-1 rounded uppercase tracking-wider border border-gold/50 shadow-lg font-bold">
+                                                        {tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <div className="absolute bottom-3 left-3 z-20">
+                                                <span className="bg-black/60 backdrop-blur-md text-white text-[10px] px-3 py-1.5 rounded-full border border-white/20 uppercase tracking-widest shadow-lg">
+                                                    {item.category}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="p-6 flex-1 flex flex-col">
+                                            <div className="flex justify-between items-start mb-3">
+                                                <h3 className="text-xl font-serif text-white group-hover:text-gold transition-colors pr-2">{item.name}</h3>
+                                                <span className="text-xl font-bold text-gold">${item.price}</span>
+                                            </div>
+                                            <p className="text-sm text-gray-400 mb-6 flex-1 leading-relaxed font-light">{item.desc}</p>
+                                            <button 
+                                                onClick={() => addToCart(item)}
+                                                className="w-full border border-white/20 text-white py-3.5 uppercase text-xs font-bold tracking-widest hover:bg-gold hover:border-gold hover:text-black transition-all duration-300 flex items-center justify-center gap-2 rounded bg-white/5"
+                                            >
+                                                <Plus size={16} /> Add to Order
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </motion.div>
+                    </section>
+
+                    {/* ADVANCED RESERVATION SECTION */}
+                    <section id="reservation" className="py-24 relative bg-maroon/10 border-y border-gold/10">
+                        <div className="max-w-6xl mx-auto px-6 relative z-10">
+                            <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 items-center">
+                                
+                                <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="lg:col-span-2">
+                                    <span className="text-gold uppercase tracking-widest text-sm mb-2 block font-bold">Reservations</span>
+                                    <h2 className="text-4xl md:text-5xl font-serif text-white mb-6">Secure Your Table</h2>
+                                    <p className="text-gray-300 leading-relaxed mb-8">
+                                        Experience gastronomy at its finest. Due to high demand, we recommend booking your table at least two weeks in advance. For parties larger than 8, please contact us directly.
+                                    </p>
+                                    <div className="space-y-6">
+                                        <div className="flex items-center gap-4 group cursor-default">
+                                            <div className="w-12 h-12 rounded-full bg-gold/5 group-hover:bg-gold/20 transition-colors flex items-center justify-center text-gold border border-gold/20">
+                                                <MapPin size={20} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-serif text-lg text-white">Location</h4>
+                                                <p className="text-gray-400 text-sm">124 Luxury Avenue, NY 10001</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 group cursor-default">
+                                            <div className="w-12 h-12 rounded-full bg-gold/5 group-hover:bg-gold/20 transition-colors flex items-center justify-center text-gold border border-gold/20">
+                                                <Clock size={20} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-serif text-lg text-white">Opening Hours</h4>
+                                                <p className="text-gray-400 text-sm">Everyday: 5:00 PM - 11:30 PM</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+
+                                <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="lg:col-span-3 glass-panel p-8 md:p-10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold to-transparent opacity-50"></div>
+                                    
+                                    <form onSubmit={handleReservationSubmit} className="space-y-5">
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div>
+                                                <label className="block text-xs text-gold mb-1 uppercase tracking-wider">Date</label>
+                                                <div className="relative">
+                                                    <Calendar className="absolute left-4 top-3.5 text-gray-400" size={18} />
+                                                    <input type="date" name="date" required className="w-full p-3.5 pl-12 rounded glass-input" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-gold mb-1 uppercase tracking-wider">Time</label>
+                                                <div className="relative">
+                                                    <Clock className="absolute left-4 top-3.5 text-gray-400" size={18} />
+                                                    <select name="time" required className="w-full p-3.5 pl-12 rounded glass-input appearance-none">
+                                                        <option value="">Select Time</option>
+                                                        <option value="17:00">5:00 PM</option>
+                                                        <option value="18:00">6:00 PM</option>
+                                                        <option value="19:00">7:00 PM</option>
+                                                        <option value="20:00">8:00 PM</option>
+                                                        <option value="21:00">9:00 PM</option>
+                                                        <option value="22:00">10:00 PM</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div>
+                                                <label className="block text-xs text-gold mb-1 uppercase tracking-wider">Party Size</label>
+                                                <div className="relative">
+                                                    <Users className="absolute left-4 top-3.5 text-gray-400" size={18} />
+                                                    <select name="guests" required className="w-full p-3.5 pl-12 rounded glass-input appearance-none">
+                                                        <option value="1">1 Person</option>
+                                                        <option value="2" defaultValue>2 People</option>
+                                                        <option value="3">3 People</option>
+                                                        <option value="4">4 People</option>
+                                                        <option value="5">5 People</option>
+                                                        <option value="6">6 People</option>
+                                                        <option value="7">7 People</option>
+                                                        <option value="8">8 People</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-gold mb-1 uppercase tracking-wider">Seating Area</label>
+                                                <select name="area" required className="w-full p-3.5 rounded glass-input appearance-none">
+                                                    <option value="main">Main Dining Room</option>
+                                                    <option value="patio">Outdoor Patio</option>
+                                                    <option value="window">Window Seat</option>
+                                                    <option value="private">Private Room (Subject to Availability)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div>
+                                                <label className="block text-xs text-gold mb-1 uppercase tracking-wider">Full Name</label>
+                                                <input type="text" name="name" defaultValue={user ? user.name : ""} required placeholder="Your Name" className="w-full p-3.5 rounded glass-input" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-gold mb-1 uppercase tracking-wider">Email Address</label>
+                                                <input type="email" name="email" defaultValue={user ? user.email : ""} required placeholder="you@example.com" className="w-full p-3.5 rounded glass-input" />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs text-gold mb-1 uppercase tracking-wider">Occasion & Special Requests</label>
+                                            <textarea name="notes" rows="2" placeholder="Birthday, Anniversary, Dietary Restrictions..." className="w-full p-3.5 rounded glass-input resize-none"></textarea>
+                                        </div>
+
+                                        <button type="submit" className="w-full bg-gold text-black py-4 rounded font-bold uppercase tracking-widest hover:bg-white transition-all duration-300 mt-4 shadow-[0_0_15px_rgba(212,175,55,0.4)]">
+                                            Confirm Reservation
+                                        </button>
+                                    </form>
+                                </motion.div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* ABOUT & REVIEWS SECTION */}
+                    <section id="about" className="py-24 px-6 max-w-7xl mx-auto">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                            
+                            {/* Left Side: Story */}
+                            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+                                <span className="text-gold uppercase tracking-widest text-sm mb-2 block font-bold">The Story</span>
+                                <h2 className="text-4xl md:text-5xl font-serif text-white mb-6">Culinary Excellence <br/>Since 2010</h2>
+                                <p className="text-gray-300 leading-relaxed mb-10 text-lg font-light">
+                                    Founded in Paris and re-imagined for the modern palate, L'Étoile brings together master chefs from three continents. We believe food is theatre — a sensory experience that begins with the eyes and ends with a lasting memory.
+                                </p>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                    <img src="https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&q=80&w=600" className="rounded-xl w-full h-64 object-cover shadow-[0_20px_40px_rgba(0,0,0,0.6)] border border-white/5" alt="Interior" />
+                                    <img src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&q=80&w=600" className="rounded-xl w-full h-64 object-cover shadow-[0_20px_40px_rgba(0,0,0,0.6)] border border-white/5" alt="Wine Pour" />
+                                </div>
+                            </motion.div>
+                            
+                            {/* Right Side: Dynamic Reviews & Form */}
+                            <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="flex flex-col">
+                                <span className="text-gold uppercase tracking-widest text-sm mb-2 block font-bold">Guest Experiences</span>
+                                <h2 className="text-3xl font-serif text-white mb-6">What Our Patrons Say</h2>
+                                
+                                {/* Review List */}
+                                <div className="space-y-4 mb-10 flex-1 overflow-y-auto max-h-[400px] pr-2">
+                                    <AnimatePresence>
+                                        {reviews.map(review => (
+                                            <motion.div 
+                                                layout
+                                                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                                                key={review.id} 
+                                                className="glass-panel p-6 rounded-xl border-l-4 border-l-gold shadow-lg"
+                                            >
+                                                <div className="flex items-center gap-4 mb-3">
+                                                    {review.dp ? (
+                                                        <img src={review.dp} alt={review.name} className="w-12 h-12 rounded-full object-cover border border-gold/30" />
+                                                    ) : (
+                                                        <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center border border-gold/30">
+                                                            <User size={20} className="text-gold" />
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <h4 className="text-white font-serif font-bold text-lg leading-tight">{review.name}</h4>
+                                                        <p className="text-gray-500 text-xs">{review.date}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-gold flex mb-2">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <Star key={i} size={14} className={i < review.rating ? "fill-gold" : "text-gray-600"} />
+                                                    ))}
+                                                </div>
+                                                <p className="italic text-gray-300 text-sm leading-relaxed font-light">"{review.text}"</p>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
+                                </div>
+
+                                {/* Premium Leave a Review Form */}
+                                <div className="glass-panel p-8 rounded-2xl border border-gold/20 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-gold/10 rounded-full blur-[40px]"></div>
+                                    <h3 className="text-2xl font-serif text-white mb-2 flex items-center gap-2"><MessageSquare size={20} className="text-gold" /> Leave a Review</h3>
+                                    <p className="text-sm text-gray-400 mb-6">We value your thoughts on our culinary experience.</p>
+                                    
+                                    <form onSubmit={handleReviewSubmit} className="space-y-4">
+                                        {!user && (
+                                            <div>
+                                                <input type="text" name="guestName" required placeholder="Your Name" className="w-full p-3 rounded glass-input text-sm" />
+                                            </div>
+                                        )}
+                                        
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm text-gray-300 mr-2">Rating:</span>
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <Star 
+                                                    key={star} 
+                                                    size={24} 
+                                                    onMouseEnter={() => setHoveredStar(star)}
+                                                    onMouseLeave={() => setHoveredStar(0)}
+                                                    onClick={() => setNewReviewRating(star)}
+                                                    className={`cursor-pointer star-transition ${
+                                                        (hoveredStar || newReviewRating) >= star 
+                                                            ? 'text-gold fill-gold scale-110 drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]' 
+                                                            : 'text-gray-600'
+                                                    }`} 
+                                                />
+                                            ))}
+                                        </div>
+
+                                        <textarea name="reviewText" required rows="3" placeholder="Tell us about the flavors, the ambiance, the service..." className="w-full p-3 rounded glass-input resize-none text-sm"></textarea>
+                                        
+                                        <button type="submit" className="bg-gold text-black px-6 py-3 rounded font-bold uppercase tracking-widest text-xs hover:bg-white transition-all shadow-[0_0_15px_rgba(212,175,55,0.2)]">
+                                            Publish Review
+                                        </button>
+                                    </form>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </section>
+
+                    {/* PREMIUM FULL FOOTER */}
+                    <footer className="bg-[#050505] border-t border-gold/20 pt-20 pb-8 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gold/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+                        
+                        <div className="max-w-7xl mx-auto px-6 relative z-10">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+                                
+                                <div className="lg:col-span-1">
+                                    <a href="#" className="text-3xl font-serif font-bold tracking-wider text-gold flex items-center gap-2 mb-6">
+                                        <Utensils size={24} /> L'Étoile
+                                    </a>
+                                    <p className="text-gray-400 text-sm leading-relaxed mb-6 font-light">
+                                        Elevating global cuisine to an art form. Join us for a symphony of flavors, elegant ambiance, and unforgettable memories.
+                                    </p>
+                                    <form onSubmit={(e) => { 
+                                        e.preventDefault(); 
+                                        setModalContent({ type: 'auth', title: 'Subscribed', message: 'Welcome to the VIP Newsletter. Exclusive offers await you.'}); 
+                                        e.target.reset(); 
+                                    }} className="space-y-3">
+                                        <label className="text-xs text-white uppercase tracking-wider font-bold block">VIP Newsletter</label>
+                                        <div className="flex">
+                                            <input type="email" required placeholder="Your email address" className="p-3 w-full rounded-l bg-white/5 border border-white/10 text-sm focus:outline-none focus:border-gold text-white transition-colors" />
+                                            <button type="submit" className="bg-gold px-4 rounded-r text-black hover:bg-white transition-colors"><Mail size={18} /></button>
+                                        </div>
+                                    </form>
+                                </div>
+                                
+                                <div>
+                                    <h4 className="font-serif text-xl mb-6 text-white border-b border-gold/30 pb-2 inline-block pr-6">Explore</h4>
+                                    <ul className="space-y-3 text-sm text-gray-400">
+                                        <li><a href="#menu" className="hover:text-gold transition-colors flex items-center gap-2"><ChevronRight size={14} className="text-gold/50"/> Our Menu</a></li>
+                                        <li><a href="#reservation" className="hover:text-gold transition-colors flex items-center gap-2"><ChevronRight size={14} className="text-gold/50"/> Book a Table</a></li>
+                                        <li><a href="#about" className="hover:text-gold transition-colors flex items-center gap-2"><ChevronRight size={14} className="text-gold/50"/> Guest Reviews</a></li>
+                                        <li><a href="#" className="hover:text-gold transition-colors flex items-center gap-2"><ChevronRight size={14} className="text-gold/50"/> Private Events</a></li>
+                                        <li><a href="#" className="hover:text-gold transition-colors flex items-center gap-2"><ChevronRight size={14} className="text-gold/50"/> Gift Cards</a></li>
+                                    </ul>
+                                </div>
+
+                                <div>
+                                    <h4 className="font-serif text-xl mb-6 text-white border-b border-gold/30 pb-2 inline-block pr-6">Gastronomy</h4>
+                                    <ul className="space-y-3 text-sm text-gray-400">
+                                        <li><a href="#menu" onClick={()=>setActiveCategory("Italian")} className="hover:text-gold transition-colors flex items-center gap-2"><ChevronRight size={14} className="text-gold/50"/> Italian Classics</a></li>
+                                        <li><a href="#menu" onClick={()=>setActiveCategory("Japanese")} className="hover:text-gold transition-colors flex items-center gap-2"><ChevronRight size={14} className="text-gold/50"/> Japanese Omakase</a></li>
+                                        <li><a href="#menu" onClick={()=>setActiveCategory("American")} className="hover:text-gold transition-colors flex items-center gap-2"><ChevronRight size={14} className="text-gold/50"/> American Steaks</a></li>
+                                        <li><a href="#menu" onClick={()=>setActiveCategory("Beverages")} className="hover:text-gold transition-colors flex items-center gap-2"><ChevronRight size={14} className="text-gold/50"/> Fine Wines & Cocktails</a></li>
+                                        <li><a href="#menu" onClick={()=>setActiveCategory("Desserts")} className="hover:text-gold transition-colors flex items-center gap-2"><ChevronRight size={14} className="text-gold/50"/> Artisanal Desserts</a></li>
+                                    </ul>
+                                </div>
+                                
+                                <div>
+                                    <h4 className="font-serif text-xl mb-6 text-white border-b border-gold/30 pb-2 inline-block pr-6">Contact</h4>
+                                    <ul className="space-y-4 text-gray-400 text-sm mb-6">
+                                        <li className="flex items-start gap-3"><MapPin className="text-gold shrink-0 mt-0.5" size={16} /> 124 Luxury Avenue, NY 10001</li>
+                                        <li className="flex items-start gap-3"><Clock className="text-gold shrink-0 mt-0.5" size={16} /> Mon - Sun: 5:00 PM - 11:30 PM</li>
+                                        <li className="flex items-center gap-3"><Info className="text-gold shrink-0" size={16} /> <span className="text-gold font-bold">+1 (212) 555-0199</span></li>
+                                    </ul>
+                                    <div className="flex gap-4 mt-8">
+                                        <a href="#" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-gold hover:text-black hover:border-gold transition-all shadow-lg hover:scale-110"><Instagram size={18} /></a>
+                                        <a href="#" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-gold hover:text-black hover:border-gold transition-all shadow-lg hover:scale-110"><Facebook size={18} /></a>
+                                        <a href="#" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-gold hover:text-black hover:border-gold transition-all shadow-lg hover:scale-110"><Twitter size={18} /></a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-white/10 text-gray-500 text-xs gap-4 font-light">
+                                <p>&copy; 2026 L'Étoile Fine Dining. All rights reserved.</p>
+                                <div className="flex gap-6">
+                                    <a href="#" className="hover:text-gold transition-colors">Privacy Policy</a>
+                                    <a href="#" className="hover:text-gold transition-colors">Terms of Service</a>
+                                    <a href="#" className="hover:text-gold transition-colors">Cookie Policy</a>
+                                </div>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
